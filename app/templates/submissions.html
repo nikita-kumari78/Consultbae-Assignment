@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>All Submissions</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #222; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 0.85rem; }
+  th { background: #f4f4f4; }
+  audio { width: 180px; height: 32px; }
+  .quality-good { color: #080; font-weight: 600; }
+  .quality-acceptable { color: #a80; }
+  .quality-very_quiet, .quality-clipping_risk { color: #c00; font-weight: 600; }
+  .quality-unknown { color: #888; }
+  a.back { display: inline-block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<a class="back" href="/">&larr; Back to submission form</a>
+<h1>All Submissions ({{ submissions|length }})</h1>
+
+{% if submissions %}
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Phone</th>
+    <th>Person ID</th>
+    <th>Play</th>
+    <th>Duration</th>
+    <th>Sample Rate</th>
+    <th>Bitrate</th>
+    <th>Loudness</th>
+    <th>Quality</th>
+    <th>Submitted</th>
+  </tr>
+  {% for s in submissions %}
+  <tr>
+    <td>{{ s.submitted_name }}</td>
+    <td>{{ s.submitted_phone }}</td>
+    <td>{{ s.person_id }}</td>
+    <td><audio controls src="/uploads/{{ s.file_path }}"></audio></td>
+    <td>{{ s.duration_sec }}s</td>
+    <td>{{ s.sample_rate_hz }} Hz</td>
+    <td>{{ s.bitrate_kbps }} kbps</td>
+    <td>{{ s.loudness_dbfs }} dBFS</td>
+    <td class="quality-{{ s.quality_estimate }}">{{ s.quality_estimate }}</td>
+    <td>{{ s.created_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No submissions yet.</p>
+{% endif %}
+</body>
+</html>

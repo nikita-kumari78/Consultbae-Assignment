@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ConsultBae Audio Submission</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 1.4rem; }
+  label { display: block; margin-top: 16px; font-weight: 600; font-size: 0.9rem; }
+  input[type=text], input[type=tel] { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+  button { margin-top: 12px; padding: 10px 16px; cursor: pointer; border: none; border-radius: 4px; font-size: 0.95rem; }
+  #recordBtn { background: #d33; color: white; }
+  #recordBtn.recording { background: #900; }
+  #submitBtn { background: #2a7; color: white; width: 100%; margin-top: 20px; }
+  #submitBtn:disabled { background: #aaa; cursor: not-allowed; }
+  #status { margin-top: 12px; font-size: 0.9rem; }
+  #status.error { color: #c00; }
+  #status.success { color: #080; }
+  audio { width: 100%; margin-top: 12px; }
+  a { color: #06c; }
+</style>
+</head>
+<body>
+<h1>Submit a voice recording</h1>
+<p><a href="/submissions">View all submissions &rarr;</a></p>
+
+<label for="name">Name</label>
+<input type="text" id="name" placeholder="Your name">
+
+<label for="phone">Phone number</label>
+<input type="tel" id="phone" placeholder="10-digit phone number">
+
+<label>Audio</label>
+<div>
+  <button id="recordBtn" type="button">&#9679; Record</button>
+  <span id="recordTimer"></span>
+</div>
+<audio id="preview" controls style="display:none"></audio>
+
+<label>...or upload a file instead</label>
+<input type="file" id="fileInput" accept="audio/*">
+
+<button id="submitBtn" type="button" disabled>Submit</button>
+<div id="status"></div>
+
+<script>
+let mediaRecorder, chunks = [], recordedBlob = null, uploadedFile = null;
+let recording = false, timerInterval, startTime;
+
+const recordBtn = document.getElementById('recordBtn');
+const submitBtn = document.getElementById('submitBtn');
+const preview = document.getElementById('preview');
+const fileInput = document.getElementById('fileInput');
+const statusEl = document.getElementById('status');
+const timerEl = document.getElementById('recordTimer');
+
+recordBtn.addEventListener('click', async () => {
+  if (!recording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        recordedBlob = new Blob(chunks, { type: 'audio/webm' });
+        uploadedFile = null;
+        fileInput.value = '';
+        preview.src = URL.createObjectURL(recordedBlob);
+        preview.style.display = 'block';
+        checkReady();
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start();
+      recording = true;
+      recordBtn.textContent = '\u25A0 Stop';
+      recordBtn.classList.add('recording');
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const secs = Math.floor((Date.now() - startTime) / 1000);
+        timerEl.textContent = ` ${secs}s`;
+      }, 200);
+    } catch (err) {
+      statusEl.textContent = 'Microphone access denied or unavailable: ' + err.message;
+      statusEl.className = 'error';
+    }
+  } else {
+    mediaRecorder.stop();
+    recording = false;
+    recordBtn.textContent = '\u25CF Record';
+    recordBtn.classList.remove('recording');
+    clearInterval(timerInterval);
+    timerEl.textContent = '';
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    uploadedFile = fileInput.files[0];
+    recordedBlob = null;
+    preview.src = URL.createObjectURL(uploadedFile);
+    preview.style.display = 'block';
+    checkReady();
+  }
+});
+
+function checkReady() {
+  const hasAudio = !!(recordedBlob || uploadedFile);
+  const hasName = document.getElementById('name').value.trim().length > 0;
+  const hasPhone = document.getElementById('phone').value.trim().length > 0;
+  submitBtn.disabled = !(hasAudio && hasName && hasPhone);
+}
+document.getElementById('name').addEventListener('input', checkReady);
+document.getElementById('phone').addEventListener('input', checkReady);
+
+submitBtn.addEventListener('click', async () => {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const audioBlob = recordedBlob || uploadedFile;
+
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('phone', phone);
+  const filename = uploadedFile ? uploadedFile.name : 'recording.webm';
+  formData.append('audio', audioBlob, filename);
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Uploading and analyzing...';
+  statusEl.className = '';
+
+  try {
+    const res = await fetch('/api/submit', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Submission failed');
+    statusEl.textContent = `Submitted. Duration ${data.metrics.duration_sec}s, ` +
+      `${data.metrics.sample_rate_hz}Hz, ${data.metrics.bitrate_kbps}kbps, ` +
+      `${data.metrics.loudness_dbfs}dBFS, quality: ${data.metrics.quality_estimate}`;
+    statusEl.className = 'success';
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.className = 'error';
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

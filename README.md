@@ -1,9 +1,9 @@
 # ConsultBae AI Automation Assignment
 
 ## Status
-- [x] Task 1 — Merge pipeline (SQLite)
+- [x] Task 1 — Merge pipeline (SQLite + MySQL)
 - [ ] Task 2 — No-code automation (n8n/Make/Zapier)
-- [ ] Task 3 — Mini audio collection app
+- [x] Task 3 — Mini audio collection app
 - [x] Task 4 — Data issues report
 - [ ] Task 5 — Stretch (scale-to-5000 note)
 
@@ -67,7 +67,44 @@ external dependencies for this step.
 _TODO_
 
 ## Task 3 — Audio app
-_TODO_
+
+### Stack
+Flask + vanilla JS (browser `MediaRecorder` API for in-browser recording,
+with a plain file-upload fallback). Audio analysis uses `ffmpeg`/`ffprobe`
+directly (not a Python audio library) — it's already installed in most
+environments, and unlike `pydub`/`librosa` it handles whatever container
+a browser's `MediaRecorder` actually produces (usually `webm`/opus)
+without extra codec setup.
+
+### What it extracts, per submission
+- **Duration** (sec), **sample rate** (Hz), **bitrate** (kbps) — via `ffprobe -show_streams`
+- **Loudness** (mean dBFS) — via `ffmpeg`'s `volumedetect` filter
+- **Bonus — rough quality estimate**: a label (`good` / `acceptable` /
+  `very_quiet` / `clipping_risk`) derived from loudness thresholds. See
+  the stuck log below for why this does *not* use silence-detection as
+  originally planned.
+
+### Run it
+```bash
+cd app
+python3 app.py
+```
+Open `http://localhost:5000`. Requires `ffmpeg`/`ffprobe` on PATH and
+`flask` installed (`pip install flask --break-system-packages` if needed).
+Connects to the same `db/consultbae.db` built in Task 1 — run
+`scripts/merge.py` first if that file doesn't exist yet.
+
+### How submissions link to Task 1's data
+On submit, the person's phone number is normalized the same way as in
+the merge pipeline and checked against `people.canonical_phone`. If it
+matches an existing person (e.g. someone from the original CSVs), the
+submission links to that `person_id`. If not, a new `people` row is
+created with `matched_from_sources='audio_app'` — so audio-only workers
+aren't lost, and existing/new are both handled without ambiguity.
+
+Tested end-to-end with synthetic audio (clean tone, a deliberately quiet
+clip, and a deliberately loud/near-clipping clip) to confirm the metrics
+and quality labels come out correct before relying on it — see stuck log.
 
 ## Task 4 — Data issues report
 See `reports/data_issues_report.md`.
@@ -76,4 +113,41 @@ See `reports/data_issues_report.md`.
 _TODO_
 
 ## Stuck log
-_Filled in as real snags come up in Tasks 2 and 3 — not written in advance._
+
+### 1. No shared ID across the 3 CSVs (Task 1)
+Assumed at first I'd need a fuzzy-matching library. Realized Source1 has
+both email and phone while Source2/Source3 each have only one of those —
+so Source1 can act as a bridge (union-find over normalized phone + email)
+without needing fuzzy name matching for the common case. Only fell back
+to name+city matching for the few records that couldn't be linked any
+other way, and even then, refused to auto-merge when phone/email values
+actively conflicted (the "Arjun Mehta" case) rather than guess. Rejected
+approach: matching on name alone — too easy to conflate two different
+real people with the same name.
+
+### 2. MySQL import test (Task 1)
+Could not spin up a live MySQL server in the sandbox I built this in (no
+network access there). Validated the generated `.sql` dump as thoroughly
+as possible without one — same clustering logic run and inspected live
+against SQLite first, then statically checked the MySQL dump (statement
+counts, quote escaping, spot-checked inserts) before handing it off. The
+person following this repo then ran the actual `mysql ... < dump.sql`
+import themselves and confirmed 57 rows in `people` — good instinct to
+verify, since that's exactly the step I couldn't close the loop on myself.
+
+### 3. Audio quality heuristic mislabeling clean audio (Task 3)
+First version of the "rough noise/quality estimate" bonus used
+`ffmpeg silencedetect` as a proxy: "if a clip has no quiet stretches at
+all, it's probably got constant background noise." Tested against a
+synthetic clean continuous tone to sanity-check the pipeline before
+trusting it — and that tone got labeled `possibly_noisy`, which is wrong.
+The bug: a clean *sustained* recording and a genuinely noisy one both
+lack silence, so "no silence" isn't evidence of noise on its own. Fixed
+by dropping silence-detection from the quality label entirely and basing
+it purely on loudness thresholds (mean/peak dBFS), which the same test
+suite (clean/quiet/loud synthetic clips) confirmed classifies correctly.
+Kept `has_quiet_stretches` as a separate diagnostic value rather than
+deleting the signal outright — it just isn't reliable enough on its own
+to drive the label. What I asked AI: helped draft the initial silencedetect
+approach; the mislabeling and the fix were caught by testing against known
+inputs before shipping it, not by inspection.
