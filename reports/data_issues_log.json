@@ -1,0 +1,366 @@
+{
+  "row_level_issues": [
+    {
+      "source": "source1",
+      "issue": "CTC value '4.2' for Amit Agarwal looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Amit Agarwal",
+        "Email": "amit.agarwal3@mailtest.example.org",
+        "Phone": "+919000000288",
+        "City": "pune",
+        "Experience (Years)": "1.8",
+        "Current CTC": "4.2",
+        "Applied Date": "19-07-2026",
+        "Skills": "SQL, Python, JavaScript, Docker"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '8.3' for Shreya Gupta looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Shreya Gupta",
+        "Email": "shreya.gupta85@example.com",
+        "Phone": "9000000227",
+        "City": "NOIDA",
+        "Experience (Years)": "3.3",
+        "Current CTC": "8.3",
+        "Applied Date": "19 Jul 2026",
+        "Skills": "Zapier, Web Scraping, Docker, n8n, Python"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '5.1' for Nikhil Malhotra looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Nikhil Malhotra",
+        "Email": "nikhil.malhotra41@example.in",
+        "Phone": "09000000145",
+        "City": "New Delhi",
+        "Experience (Years)": "4.2",
+        "Current CTC": "5.1",
+        "Applied Date": "21-08-2026",
+        "Skills": "FastAPI, JavaScript, Web Scraping, SQL, Python"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '6.1' for Ritu Sharma looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Ritu Sharma",
+        "Email": "ritu.sharma23@mailtest.example.org",
+        "Phone": "09000000146",
+        "City": "Noida ",
+        "Experience (Years)": "4.8",
+        "Current CTC": "6.1",
+        "Applied Date": "2026-08-03",
+        "Skills": "n8n, Web Scraping, MongoDB, SQL, React"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '5.8' for Arjun Mishra looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Arjun Mishra",
+        "Email": "arjun.mishra70@example.com",
+        "Phone": "9000000106",
+        "City": "Delhi",
+        "Experience (Years)": "1.3",
+        "Current CTC": "5.8",
+        "Applied Date": "22-08-2026",
+        "Skills": "React, Docker, JavaScript"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '11.2' for Meera Bhatia looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Meera Bhatia",
+        "Email": "meera.bhatia52@mailtest.example.org",
+        "Phone": "09000000223",
+        "City": "Delhi NCR",
+        "Experience (Years)": "5.1",
+        "Current CTC": "11.2",
+        "Applied Date": "2026-07-03",
+        "Skills": "LangChain, Docker, MySQL, Python, SQL, React"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '7.6' for Varun Jain looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Varun Jain",
+        "Email": "varun.jain29@example.com",
+        "Phone": "9000000263",
+        "City": "Pune",
+        "Experience (Years)": "3.1",
+        "Current CTC": "7.6",
+        "Applied Date": "08/19/2026",
+        "Skills": "n8n, Web Scraping, FastAPI, MySQL, Pandas, MongoDB"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '2.4' for Kavya Mehta looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Kavya Mehta",
+        "Email": "kavya.mehta7@example.com",
+        "Phone": "+919000000177",
+        "City": "Bengaluru",
+        "Experience (Years)": "5.1",
+        "Current CTC": "2.4",
+        "Applied Date": "2 Jul 2026",
+        "Skills": "n8n, MongoDB, FastAPI, Pandas, React"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '10.0' for Sneha Chopra looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Sneha Chopra",
+        "Email": "sneha.chopra99@example.in",
+        "Phone": "+919000000162",
+        "City": "pune",
+        "Experience (Years)": "4.9",
+        "Current CTC": "10.0",
+        "Applied Date": "03-07-2026",
+        "Skills": "Pandas, React, MySQL, JavaScript, SQL"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '11.9' for Pooja Gupta looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Pooja Gupta",
+        "Email": "pooja.gupta57@mailtest.example.org",
+        "Phone": "09000000271",
+        "City": "Noida",
+        "Experience (Years)": "3.9",
+        "Current CTC": "11.9",
+        "Applied Date": "24-06-2026",
+        "Skills": "Docker, MySQL, SQL, n8n, Selenium"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '6.1' for R. Verma looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "R. Verma",
+        "Email": "rohit.verma13@mailtest.example.org",
+        "Phone": "9000000294",
+        "City": "Bangalore",
+        "Experience (Years)": "2.4",
+        "Current CTC": "6.1",
+        "Applied Date": "08/13/2026",
+        "Skills": "Python, React, MongoDB"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '7.8' for Nikhil Chopra looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Nikhil Chopra",
+        "Email": "alt.nikhil.chopra70@example.com",
+        "Phone": "09000000103",
+        "City": "NOIDA",
+        "Experience (Years)": "0.8",
+        "Current CTC": "7.8",
+        "Applied Date": "07/03/2026",
+        "Skills": "Pandas, SQL, n8n"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '6.6' for Priya Saxena looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Priya Saxena",
+        "Email": "priya.saxena61@example.com",
+        "Phone": "+919000000231",
+        "City": "Delhi",
+        "Experience (Years)": "5.0",
+        "Current CTC": "6.6",
+        "Applied Date": "08/16/2026",
+        "Skills": "Python, MySQL, Zapier, React"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "Exact duplicate row for Rohit Verma (rohit.verma13@mailtest.example.org, 9000000294) -- kept first occurrence, dropped repeat.",
+      "row": {
+        "Full Name": "Rohit Verma",
+        "Email": "rohit.verma13@mailtest.example.org",
+        "Phone": "9000000294",
+        "City": "Bangalore",
+        "Experience (Years)": "2.4",
+        "Current CTC": "6.1",
+        "Applied Date": "08/13/2026",
+        "Skills": "Python, React, MongoDB"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '7.6' for Rohit Nair looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Rohit Nair",
+        "Email": "rohit.nair32@mailtest.example.org",
+        "Phone": "+919000000268",
+        "City": "Gurugram",
+        "Experience (Years)": "2.4",
+        "Current CTC": "7.6",
+        "Applied Date": "2026-08-19",
+        "Skills": "REST APIs, n8n, Web Scraping, Docker"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '2.7' for Rahul Chopra looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Rahul Chopra",
+        "Email": "rahul.chopra70@example.com",
+        "Phone": "09000000137",
+        "City": "NOIDA",
+        "Experience (Years)": "1.7",
+        "Current CTC": "2.7",
+        "Applied Date": "27 Jul 2026",
+        "Skills": "Zapier, Docker, Python"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '11.4' for Amit Reddy looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Amit Reddy",
+        "Email": "amit.reddy9@mailtest.example.org",
+        "Phone": "09000000165",
+        "City": "Delhi NCR",
+        "Experience (Years)": "2.7",
+        "Current CTC": "11.4",
+        "Applied Date": "21 Jul 2026",
+        "Skills": "React, MySQL, LangChain"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '7.8' for Nikhil Chopra looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Nikhil Chopra",
+        "Email": "nikhil.chopra70@example.com",
+        "Phone": "09000000103",
+        "City": "NOIDA",
+        "Experience (Years)": "0.8",
+        "Current CTC": "7.8",
+        "Applied Date": "07/03/2026",
+        "Skills": "Pandas, SQL, n8n"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '9.3' for Nikhil Mehta looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Nikhil Mehta",
+        "Email": "nikhil.mehta5@example.com",
+        "Phone": "09000000104",
+        "City": "PUNE",
+        "Experience (Years)": "2.9",
+        "Current CTC": "9.3",
+        "Applied Date": "2026-07-26",
+        "Skills": "Docker, LangChain, Zapier, Selenium, Python, React"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '5.9' for Isha Kapoor looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Isha Kapoor",
+        "Email": "isha.kapoor54@example.com",
+        "Phone": "+919000000295",
+        "City": "new delhi",
+        "Experience (Years)": "5.1",
+        "Current CTC": "5.9",
+        "Applied Date": "08/21/2026",
+        "Skills": "FastAPI, Python, JavaScript, Selenium, React, MySQL"
+      }
+    },
+    {
+      "source": "source1",
+      "issue": "CTC value '10.3' for Isha Sharma looks like LPA shorthand, not raw INR -- multiplied by 100,000.",
+      "row": {
+        "Full Name": "Isha Sharma",
+        "Email": "isha.sharma15@example.com",
+        "Phone": "+919000000259",
+        "City": "Delhi",
+        "Experience (Years)": "3.5",
+        "Current CTC": "10.3",
+        "Applied Date": "07/12/2026",
+        "Skills": "n8n, Python, Selenium, JavaScript, REST APIs, MongoDB"
+      }
+    },
+    {
+      "source": "source2",
+      "issue": "Fully blank row -- dropped.",
+      "row": {
+        "email_id": "",
+        "worker_name": "",
+        "rate": "",
+        "location": "",
+        "status": "",
+        "skill_tags": ""
+      }
+    },
+    {
+      "source": "source2",
+      "issue": "Column-shifted row detected (skills ended up in email_id column, fields shifted by one) -- realigned fields.",
+      "row": {
+        "email_id": "react, javascript, mysql",
+        "worker_name": "ISHA.CHOPRA95@MAILTEST.EXAMPLE.ORG",
+        "rate": "Isha Chopra",
+        "location": "1406/hr",
+        "status": "Pune",
+        "skill_tags": "active"
+      }
+    },
+    {
+      "source": "source3",
+      "issue": "Duplicate embedded header row mid-file -- dropped.",
+      "row": {
+        "Name": "Name",
+        "Phone Number": "Phone Number",
+        "City": "City",
+        "Verified": "Verified",
+        "Projects Completed": "Projects Completed"
+      }
+    }
+  ],
+  "match_conflicts": [
+    {
+      "name_key": "arjun mehta",
+      "city": "Noida",
+      "rows": [
+        {
+          "source": "source1_naukri",
+          "raw_name": "Arjun Mehta",
+          "email": "arjun.mehta9@example.in",
+          "phone": "9000000131"
+        },
+        {
+          "source": "source2_gig",
+          "raw_name": "Arjun Mehta",
+          "email": "arjun.mehta77@mailtest.example.org",
+          "phone": null
+        },
+        {
+          "source": "source3_cbnexus",
+          "raw_name": "Arjun Mehta",
+          "email": null,
+          "phone": "9000000131"
+        },
+        {
+          "source": "source3_cbnexus",
+          "raw_name": "Arjun Mehta",
+          "email": null,
+          "phone": "9000000272"
+        }
+      ],
+      "reason": "Same name + city but conflicting phone/email values across records -- could be the same person with a data error, or two different real people. NOT auto-merged."
+    }
+  ]
+}
