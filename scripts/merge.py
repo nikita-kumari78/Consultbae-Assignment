@@ -22,6 +22,7 @@ from normalize import (
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 DB_PATH = ROOT / "db" / "consultbae.db"
+MYSQL_DUMP_PATH = ROOT / "db" / "consultbae_mysql.sql"
 ISSUES = []  # collected as we go, dumped to reports/data_issues_log.json
 
 
@@ -326,6 +327,183 @@ CREATE TABLE match_conflicts (
 );
 """
 
+# ---------------------------------------------------------------------
+# MySQL dialect: same shape as SCHEMA above, but with MySQL types,
+# AUTO_INCREMENT, InnoDB engine and real FOREIGN KEY constraints.
+# ---------------------------------------------------------------------
+MYSQL_SCHEMA = """
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS match_conflicts;
+DROP TABLE IF EXISTS audio_submissions;
+DROP TABLE IF EXISTS cbnexus_contacts;
+DROP TABLE IF EXISTS gig_worker_status;
+DROP TABLE IF EXISTS naukri_applications;
+DROP TABLE IF EXISTS skills;
+DROP TABLE IF EXISTS person_source_records;
+DROP TABLE IF EXISTS people;
+
+CREATE TABLE people (
+    person_id INT AUTO_INCREMENT PRIMARY KEY,
+    canonical_name VARCHAR(255),
+    canonical_email VARCHAR(255),
+    canonical_phone VARCHAR(20),
+    canonical_city VARCHAR(100),
+    matched_from_sources VARCHAR(255),
+    match_confidence VARCHAR(20),
+    INDEX idx_email (canonical_email),
+    INDEX idx_phone (canonical_phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE person_source_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    person_id INT,
+    source VARCHAR(50),
+    raw_name VARCHAR(255),
+    raw_data JSON,
+    FOREIGN KEY (person_id) REFERENCES people(person_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE skills (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    person_id INT,
+    skill VARCHAR(100),
+    source VARCHAR(50),
+    FOREIGN KEY (person_id) REFERENCES people(person_id) ON DELETE CASCADE,
+    INDEX idx_skill (skill)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE naukri_applications (
+    person_id INT,
+    experience_years DECIMAL(4,1),
+    ctc_annual_inr INT,
+    ctc_normalization_method VARCHAR(50),
+    applied_date DATE,
+    applied_date_raw VARCHAR(50),
+    FOREIGN KEY (person_id) REFERENCES people(person_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE gig_worker_status (
+    person_id INT,
+    rate_monthly_inr INT,
+    rate_normalization_method VARCHAR(50),
+    status VARCHAR(20),
+    FOREIGN KEY (person_id) REFERENCES people(person_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE cbnexus_contacts (
+    person_id INT,
+    verified BOOLEAN,
+    projects_completed INT,
+    FOREIGN KEY (person_id) REFERENCES people(person_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE audio_submissions (
+    submission_id INT AUTO_INCREMENT PRIMARY KEY,
+    person_id INT,
+    submitted_name VARCHAR(255),
+    submitted_phone VARCHAR(20),
+    file_path VARCHAR(500),
+    duration_sec DECIMAL(8,2),
+    sample_rate_hz INT,
+    bitrate_kbps DECIMAL(8,2),
+    loudness_dbfs DECIMAL(6,2),
+    quality_estimate VARCHAR(50),
+    created_at DATETIME,
+    FOREIGN KEY (person_id) REFERENCES people(person_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE match_conflicts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name_key VARCHAR(255),
+    city VARCHAR(100),
+    detail JSON
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
+"""
+
+
+def _sql_val(v):
+    """Render a Python value as a MySQL literal for an INSERT statement."""
+    if v is None:
+        return "NULL"
+    if isinstance(v, bool):
+        return "1" if v else "0"
+    if isinstance(v, (int, float)):
+        return str(v)
+    s = str(v).replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{s}'"
+
+
+def build_mysql_dump(all_rows, clusters, conflicts):
+    """
+    Generate a MySQL-compatible .sql dump (schema + data) from the same
+    matched clusters used for the SQLite build, so the matching logic is
+    identical -- only the target dialect differs. No live MySQL server is
+    available in this environment to execute against directly, so this is
+    written out as a plain .sql file for `mysql ... < consultbae_mysql.sql`.
+    """
+    lines = [MYSQL_SCHEMA.strip(), "", "-- Data", ""]
+    person_id = 0
+
+    for cluster in clusters:
+        person_id += 1
+        rows_for_person = [all_rows[i] for i in cluster]
+        name, email, phone, city = pick_canonical(rows_for_person)
+        sources = sorted({r["source"] for r in rows_for_person})
+        confidence = "exact" if any(r.get("email") or r.get("phone") for r in rows_for_person) else "name_city"
+
+        lines.append(
+            "INSERT INTO people (person_id, canonical_name, canonical_email, canonical_phone, "
+            "canonical_city, matched_from_sources, match_confidence) VALUES "
+            f"({person_id}, {_sql_val(name)}, {_sql_val(email)}, {_sql_val(phone)}, "
+            f"{_sql_val(city)}, {_sql_val(','.join(sources))}, {_sql_val(confidence)});"
+        )
+
+        for r in rows_for_person:
+            raw_json = json.dumps(r, default=str)
+            lines.append(
+                "INSERT INTO person_source_records (person_id, source, raw_name, raw_data) VALUES "
+                f"({person_id}, {_sql_val(r['source'])}, {_sql_val(r['raw_name'])}, {_sql_val(raw_json)});"
+            )
+            for skill in r.get("skills", []):
+                lines.append(
+                    "INSERT INTO skills (person_id, skill, source) VALUES "
+                    f"({person_id}, {_sql_val(skill)}, {_sql_val(r['source'])});"
+                )
+            if r["source"] == "source1_naukri":
+                lines.append(
+                    "INSERT INTO naukri_applications (person_id, experience_years, ctc_annual_inr, "
+                    "ctc_normalization_method, applied_date, applied_date_raw) VALUES "
+                    f"({person_id}, {_sql_val(r['experience_years'])}, {_sql_val(r['ctc_annual_inr'])}, "
+                    f"{_sql_val(r['ctc_normalization_method'])}, {_sql_val(r['applied_date'])}, "
+                    f"{_sql_val(r['applied_date_raw'])});"
+                )
+            elif r["source"] == "source2_gig":
+                lines.append(
+                    "INSERT INTO gig_worker_status (person_id, rate_monthly_inr, "
+                    "rate_normalization_method, status) VALUES "
+                    f"({person_id}, {_sql_val(r['rate_monthly_inr'])}, "
+                    f"{_sql_val(r['rate_normalization_method'])}, {_sql_val(r['status'])});"
+                )
+            elif r["source"] == "source3_cbnexus":
+                lines.append(
+                    "INSERT INTO cbnexus_contacts (person_id, verified, projects_completed) VALUES "
+                    f"({person_id}, {_sql_val(r['verified'])}, {_sql_val(r['projects_completed'])});"
+                )
+
+    for c in conflicts:
+        lines.append(
+            "INSERT INTO match_conflicts (name_key, city, detail) VALUES "
+            f"({_sql_val(c['name_key'])}, {_sql_val(c['city'])}, {_sql_val(json.dumps(c))});"
+        )
+
+    MYSQL_DUMP_PATH.parent.mkdir(exist_ok=True)
+    with open(MYSQL_DUMP_PATH, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
 
 def pick_canonical(rows_for_person):
     """From the records believed to be one person, pick the most complete
@@ -406,6 +584,7 @@ def main():
     clusters, conflicts = match_people(all_rows)
 
     build_db(all_rows, clusters, conflicts)
+    build_mysql_dump(all_rows, clusters, conflicts)
 
     reports_dir = ROOT / "reports"
     reports_dir.mkdir(exist_ok=True)
@@ -416,7 +595,8 @@ def main():
     print(f"Merged into {len(clusters)} unique people")
     print(f"Row-level issues logged: {len(ISSUES)}")
     print(f"Unresolved match conflicts (flagged, not auto-merged): {len(conflicts)}")
-    print(f"DB written to {DB_PATH}")
+    print(f"SQLite DB written to {DB_PATH}")
+    print(f"MySQL dump written to {MYSQL_DUMP_PATH}")
 
 
 if __name__ == "__main__":
