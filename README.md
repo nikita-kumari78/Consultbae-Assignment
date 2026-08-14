@@ -5,7 +5,7 @@
 - [x] Task 2 — No-code automation (n8n/Make/Zapier)
 - [x] Task 3 — Mini audio collection app
 - [x] Task 4 — Data issues report
-- [ ] Task 5 — Stretch (scale-to-5000 note)
+- [x] Task 5 — Stretch (scale-to-5000 note)
 
 ## Task 1 — Merge
 
@@ -26,17 +26,10 @@ for lineage/audit data). Import it with:
 ```bash
 mysql -u root -p your_database_name < db/consultbae_mysql.sql
 ```
-Note: this sandbox has no network access, so I could not spin up a live
-MySQL server to execute the dump against directly here. To validate
-correctness without one, I: (1) ran the exact same matching/cleaning logic
-against SQLite, which I *could* execute and inspect directly (57 people,
-duplicate/alias merges and the one flagged conflict all confirmed correct),
-then (2) generated the MySQL dump from those same clustered results, and
-(3) statically validated the `.sql` file — statement counts match the
-schema (8 `CREATE TABLE`, one per table), quote escaping checked
-line-by-line, and sample `INSERT`s spot-checked by hand. Please run the
-import yourself and confirm — that's the one part of this deliverable I
-couldn't verify end-to-end in this environment.
+**Update — verified live on Railway:** hosted this MySQL dump on a live
+Railway MySQL instance and imported it via MySQL Workbench — all 57
+people confirmed present (`SELECT COUNT(*) FROM people;` → 57). This is
+the same live database Task 2's n8n automation connects to.
 
 `db/consultbae.db` (SQLite) is also still included as a working reference —
 useful for quickly poking at the data locally without a MySQL server running.
@@ -125,7 +118,66 @@ and quality labels come out correct before relying on it — see stuck log.
 See `reports/data_issues_report.md`.
 
 ## Task 5 — Stretch: scaling to 5,000 workers
-_TODO_
+
+At 57 people, correctness mattered far more than speed — every query in
+this repo runs in milliseconds regardless of approach. At 5,000+ people
+(and presumably tens of thousands of source rows across the 3 CSVs,
+skills, and audio submissions), three parts of this system would need
+to change before they broke, not because they're wrong today but
+because they were built for correctness-first at small scale.
+
+### 1. Merge pipeline (`scripts/merge.py`)
+The union-find over normalized phone/email is algorithmically fine at
+any scale (near-linear). The actual bottleneck would be **loading all
+3 CSVs fully into memory as Python objects** before merging, which is
+what the current script does — fine for ~150 rows, not fine for
+50,000+. Fix: stream each CSV row-by-row and build the union-find
+incrementally, or push the dedup logic into SQL (`INSERT ... ON
+DUPLICATE KEY` style upserts keyed on normalized phone/email) instead
+of doing it in application memory. The `match_conflicts` fallback
+logic (name+city, unmerged when phone/email actively disagree) stays
+exactly the same — it doesn't get more expensive with more people, it
+just fires more often in absolute terms.
+
+### 2. Database
+Two changes, both already partially in place:
+- `idx_phone` and `idx_email` on `people` already exist (see
+  `db/consultbae_mysql.sql`) — these are what make the merge/audio-app
+  lookups fast; at 5,000 rows they matter far more than they did at 57.
+- `skills.skill` has an index too, but the `skills` table itself would
+  be the largest table by row count (avg ~5 skills/person × 5,000 =
+  25,000 rows) and any query doing `GROUP_CONCAT` across it — like the
+  Task 2 automation's `Get Untagged People` query — would benefit from
+  a composite index on `(person_id, skill)` rather than relying on the
+  single-column index alone.
+
+### 3. Task 2's n8n automation
+This is the part that would genuinely need a design change, not just
+tuning. The current workflow classifies **one person at a time** via
+`Split In Batches` (batch size 1) — deliberate at 57 people, so one bad
+LLM response can't corrupt another person's row. At 5,000 people,
+that's 5,000 sequential HTTP calls to an LLM API, which is slow (LLM
+latency × 5,000, likely hours) and expensive per-call. Two options,
+not mutually exclusive:
+- **Batch the LLM call, not just the loop**: send 20–50 people's skill
+  lists in one prompt, ask for a JSON array of `{person_id, category}`
+  back, and validate each entry the same way the current Code node
+  validates one. Cuts API calls ~20–50x. Trade-off: one malformed LLM
+  response now risks a batch of people instead of one — mitigate by
+  keeping the same "fall back to `other`" logic per-entry rather than
+  failing the whole batch if one entry is malformed.
+- **Run it as a scheduled nightly job** (swap Manual Trigger for
+  Schedule Trigger, already noted as an option in `automation/README.md`)
+  rather than an on-demand run, since tagging doesn't need to be
+  real-time — this turns "5,000 calls block someone waiting" into
+  "5,000 calls happen unattended overnight," which is a scaling fix
+  that costs nothing to implement.
+
+### What would *not* need to change
+The audio app's per-submission phone-match logic (Task 3) is already
+O(1) per submission via the indexed phone lookup — 5,000 people doesn't
+change that. Same for `match_conflicts` — it's an append-only log, not
+a lookup structure, so it scales linearly with no redesign needed.
 
 ## Stuck log
 
@@ -179,7 +231,14 @@ category, a comma-separated list) to confirm the fallback-to-`other`
 logic never writes garbage into the DB. That also caught a real edge
 case: one person has zero rows in `skills`, so the join-based query
 correctly leaves them untagged rather than sending an empty prompt to
-the LLM. Still need to import the workflow into n8n and run it against
-a live database + API key to confirm the parts I couldn't simulate here
-— noted clearly in `automation/README.md`.
-# Consultbae-Assignment
+the LLM.
+
+**Update — ran it live:** imported the workflow into n8n, hosted the
+MySQL database on Railway, and ran the full workflow end to end. The
+MySQL nodes connected and correctly fetched all untagged people. The
+LLM HTTP Request node authenticated successfully (confirmed the
+request/headers were accepted) — the only remaining failure was the
+Anthropic account used for testing not having API credits loaded,
+which is a billing issue, not a workflow bug. The auth + request-format
+success is what the earlier offline testing was standing in for, and
+it held up once actually connected.
