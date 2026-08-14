@@ -2,7 +2,7 @@
 
 ## Status
 - [x] Task 1 — Merge pipeline (SQLite + MySQL)
-- [ ] Task 2 — No-code automation (n8n/Make/Zapier)
+- [x] Task 2 — No-code automation (n8n/Make/Zapier)
 - [x] Task 3 — Mini audio collection app
 - [x] Task 4 — Data issues report
 - [ ] Task 5 — Stretch (scale-to-5000 note)
@@ -64,7 +64,22 @@ Requires only the Python standard library (`csv`, `sqlite3`, `json`) — no
 external dependencies for this step.
 
 ## Task 2 — Automation
-_TODO_
+
+Built entirely in n8n's UI (no-code): `automation/skill_tagging_workflow.json`.
+
+For every person with a `NULL` `skill_category`, the workflow pulls their
+aggregated skills (from the `skills` table built in Task 1), sends them to
+an LLM to classify into one of `automation` / `web-dev` / `data` / `ai-ml`
+/ `backend-devops` / `other`, and writes the result back to `people`. Loops
+one person per LLM call via n8n's Split In Batches node, so a bad response
+for one person never affects another, and it's safe to re-run — already
+tagged people are simply skipped.
+
+New columns (`skill_category`, `skill_category_tagged_at`) are added via
+`scripts/migrate_add_skill_category.py` (SQLite, already applied to
+`db/consultbae.db`) and `db/migrations/001_add_skill_category.sql` (MySQL).
+
+Full setup steps, workflow diagram, and design notes: `automation/README.md`.
 
 ## Task 3 — Audio app
 
@@ -151,3 +166,19 @@ deleting the signal outright — it just isn't reliable enough on its own
 to drive the label. What I asked AI: helped draft the initial silencedetect
 approach; the mislabeling and the fix were caught by testing against known
 inputs before shipping it, not by inspection.
+
+### 4. Validating an n8n workflow without a live n8n instance or LLM call (Task 2)
+Same underlying constraint as the MySQL import in Task 1: no network
+access in this sandbox, so I couldn't actually run the workflow inside
+n8n or make a real call to an LLM API to confirm it end-to-end. Rather
+than skip validation, I ported the exact SELECT/UPDATE queries and the
+Code node's category-parsing logic into `automation/test_workflow_logic.py`
+and ran them against a real copy of `db/consultbae.db`, including
+adversarial fake LLM outputs (empty string, a sentence instead of a bare
+category, a comma-separated list) to confirm the fallback-to-`other`
+logic never writes garbage into the DB. That also caught a real edge
+case: one person has zero rows in `skills`, so the join-based query
+correctly leaves them untagged rather than sending an empty prompt to
+the LLM. Still need to import the workflow into n8n and run it against
+a live database + API key to confirm the parts I couldn't simulate here
+— noted clearly in `automation/README.md`.

@@ -10,8 +10,22 @@ handle virtually any input codec/container a browser might produce
 production audio pipelines.
 """
 import json
+import os
 import re
 import subprocess
+
+# On Windows, adding ffmpeg to PATH via Environment Variables doesn't
+# always take effect immediately (needs a full restart, not just a new
+# terminal). To sidestep that entirely, you can point directly at the
+# ffmpeg/ffprobe executables here -- either via environment variables,
+# or by editing the defaults below to match where you extracted ffmpeg.
+FFMPEG_BIN = os.environ.get("FFMPEG_BIN", "ffmpeg")
+FFPROBE_BIN = os.environ.get("FFPROBE_BIN", "ffprobe")
+
+print(f"[audio_analysis] Using FFMPEG_BIN = {FFMPEG_BIN}")
+print(f"[audio_analysis] Using FFPROBE_BIN = {FFPROBE_BIN}")
+print(f"[audio_analysis] ffmpeg path exists: {os.path.isfile(FFMPEG_BIN) if os.path.isabs(FFMPEG_BIN) else 'N/A (not an absolute path, relies on PATH)'}")
+print(f"[audio_analysis] ffprobe path exists: {os.path.isfile(FFPROBE_BIN) if os.path.isabs(FFPROBE_BIN) else 'N/A (not an absolute path, relies on PATH)'}")
 
 
 def _run(cmd):
@@ -21,7 +35,7 @@ def _run(cmd):
 def probe_structural(file_path):
     """duration (sec), sample_rate (Hz), bitrate (kbps), channels -- via ffprobe."""
     cmd = [
-        "ffprobe", "-v", "quiet", "-print_format", "json",
+        FFPROBE_BIN, "-v", "quiet", "-print_format", "json",
         "-show_format", "-show_streams", str(file_path),
     ]
     result = _run(cmd)
@@ -56,7 +70,7 @@ def measure_loudness(file_path):
     digital sample, so values are always <= 0. Quieter audio = more negative.
     """
     cmd = [
-        "ffmpeg", "-i", str(file_path), "-af", "volumedetect",
+        FFMPEG_BIN, "-i", str(file_path), "-af", "volumedetect",
         "-f", "null", "-",
     ]
     result = _run(cmd)  # ffmpeg writes filter output to stderr, exit code 0 expected
@@ -78,7 +92,7 @@ def estimate_noise_floor(file_path, noise_threshold_db="-30dB", min_silence_sec=
     it -- we report that rather than guessing a number.
     """
     cmd = [
-        "ffmpeg", "-i", str(file_path), "-af",
+        FFMPEG_BIN, "-i", str(file_path), "-af",
         f"silencedetect=noise={noise_threshold_db}:d={min_silence_sec}",
         "-f", "null", "-",
     ]
