@@ -182,3 +182,4 @@ correctly leaves them untagged rather than sending an empty prompt to
 the LLM. Still need to import the workflow into n8n and run it against
 a live database + API key to confirm the parts I couldn't simulate here
 — noted clearly in `automation/README.md`.
+# Consultbae-Assignment
